@@ -2,8 +2,10 @@ package constella
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/btwiuse/wsport"
@@ -13,12 +15,18 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	webtransport "github.com/libp2p/go-libp2p/p2p/transport/webtransport"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/webteleport/wtf"
 )
 
 func New() *Constella {
 	host, _ := libp2p.New(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.Transport(quic.NewTransport),
+		libp2p.Transport(webtransport.New),
 		libp2p.Transport(wsport.New),
 		wsport.ListenAddrStrings(RELAY),
 	)
@@ -105,6 +113,22 @@ func (c *Constella) Conns() map[string]ConnStats {
 }
 
 func (c *Constella) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/add") {
+		addr := strings.TrimPrefix(r.URL.Path, "/add")
+		maddr, err := ma.NewMultiaddr(addr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		id, err := addAddrToPeerstore(c.Host, maddr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Println("added", maddr, "with", id)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
