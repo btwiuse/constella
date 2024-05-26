@@ -5,6 +5,7 @@ go 1.22.3
 require (
 	github.com/btwiuse/wsport v0.0.4
 	github.com/libp2p/go-libp2p v0.35.0
+	github.com/libp2p/go-libp2p-gostream v0.6.0
 	github.com/libp2p/go-libp2p-http v0.5.0
 	github.com/multiformats/go-multiaddr v0.12.4
 	github.com/webteleport/relay v0.4.31
@@ -56,7 +57,6 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-flow-metrics v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.4.1 // indirect
-	github.com/libp2p/go-libp2p-gostream v0.6.0 // indirect
 	github.com/libp2p/go-msgio v0.3.0 // indirect
 	github.com/libp2p/go-nat v0.2.0 // indirect
 	github.com/libp2p/go-netroute v0.2.1 // indirect

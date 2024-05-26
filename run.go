@@ -13,6 +13,7 @@ import (
 
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
+	gostream "github.com/libp2p/go-libp2p-gostream"
 	p2phttp "github.com/libp2p/go-libp2p-http"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
@@ -131,11 +132,7 @@ func (c *Constella) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		pfx := "/http/" + pid.String()
 		dialCtx := func(ctx context.Context, network, addr string) (net.Conn, error) {
-			stream, err := c.Host.NewStream(ctx, pid, p2phttp.DefaultP2PProtocol)
-			if err != nil {
-				return nil, err
-			}
-			return newConn(stream), nil
+			return gostream.Dial(ctx, c.Host, pid, p2phttp.DefaultP2PProtocol)
 		}
 		var rt http.RoundTripper = &http.Transport{
 			DialContext:     dialCtx,
