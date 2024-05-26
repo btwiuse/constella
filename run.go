@@ -13,13 +13,13 @@ import (
 
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
-	gostream "github.com/libp2p/go-libp2p-gostream"
-	p2phttp "github.com/libp2p/go-libp2p-http"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	p2phttp "github.com/libp2p/go-libp2p/p2p/http"
+	"github.com/libp2p/go-libp2p/p2p/net/gostream"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	webtransport "github.com/libp2p/go-libp2p/p2p/transport/webtransport"
@@ -132,7 +132,7 @@ func (c *Constella) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		pfx := "/http/" + pid.String()
 		dialCtx := func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return gostream.Dial(ctx, c.Host, pid, p2phttp.DefaultP2PProtocol)
+			return gostream.Dial(ctx, c.Host, pid, p2phttp.ProtocolIDForMultistreamSelect)
 		}
 		var rt http.RoundTripper = &http.Transport{
 			DialContext:     dialCtx,

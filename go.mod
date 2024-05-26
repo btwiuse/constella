@@ -5,8 +5,6 @@ go 1.22.3
 require (
 	github.com/btwiuse/wsport v0.0.4
 	github.com/libp2p/go-libp2p v0.35.0
-	github.com/libp2p/go-libp2p-gostream v0.6.0
-	github.com/libp2p/go-libp2p-http v0.5.0
 	github.com/multiformats/go-multiaddr v0.12.4
 	github.com/webteleport/relay v0.4.31
 	github.com/webteleport/wtf v0.1.24
@@ -44,6 +42,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
