@@ -1,15 +1,19 @@
 package constella
 
 import (
+	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
+	p2phttp "github.com/libp2p/go-libp2p-http"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -19,6 +23,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	webtransport "github.com/libp2p/go-libp2p/p2p/transport/webtransport"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/webteleport/relay"
 	"github.com/webteleport/wtf"
 )
 
@@ -113,6 +118,40 @@ func (c *Constella) Conns() map[string]ConnStats {
 }
 
 func (c *Constella) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/http") {
+		var pid peer.ID
+		for _, peer := range c.Info().Peers {
+			pfx := "/http/" + peer.String()
+			log.Println(pfx)
+			if strings.HasPrefix(r.URL.Path, pfx) {
+				pid = peer
+				log.Println("found", pid)
+				break
+			}
+		}
+		pfx := "/http/" + pid.String()
+		dialCtx := func(ctx context.Context, network, addr string) (net.Conn, error) {
+			stream, err := c.Host.NewStream(ctx, pid, p2phttp.DefaultP2PProtocol)
+			if err != nil {
+				return nil, err
+			}
+			return newConn(stream), nil
+		}
+		var rt http.RoundTripper = &http.Transport{
+			DialContext:     dialCtx,
+			MaxIdleConns:    100,
+			IdleConnTimeout: 90 * time.Second,
+		}
+		rp := relay.ReverseProxy(rt)
+		rp.Rewrite = func(req *httputil.ProxyRequest) {
+			req.SetXForwarded()
+
+			req.Out.URL.Host = r.Host
+			req.Out.URL.Scheme = "http"
+		}
+		http.StripPrefix(pfx, rp).ServeHTTP(w, r)
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/add") {
 		addr := strings.TrimPrefix(r.URL.Path, "/add")
 		maddr, err := ma.NewMultiaddr(addr)
