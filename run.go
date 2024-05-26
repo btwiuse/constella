@@ -61,6 +61,7 @@ type ConnStats struct {
 	NumStreams int                     `json:"numStreams"`
 	ConnState  network.ConnectionState `json:"connState"`
 	Streams    []StreamStats           `json:"streams"`
+	Protocols  []protocol.ID           `json:"protocols"`
 }
 
 type Stats struct {
@@ -112,6 +113,12 @@ func (c *Constella) Conns() map[string]ConnStats {
 				ID:       stream.ID(),
 				Protocol: stream.Protocol(),
 			})
+		}
+		protocols, err := c.Host.Peerstore().GetProtocols(connStats.RemotePeer)
+		if err != nil {
+			log.Println(err)
+		} else {
+			connStats.Protocols = protocols
 		}
 		conns[conn.ID()] = connStats
 	}
