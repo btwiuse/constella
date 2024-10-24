@@ -177,13 +177,13 @@ func (c *Constella) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Constella) HandleAdd(w http.ResponseWriter, r *http.Request) {
-	addr := strings.TrimPrefix(r.URL.Path, "/add/")
+	addr := strings.TrimPrefix(r.URL.Path, "/add")
 	maddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	id, err := addAddrToPeerstore(c.Host, maddr)
+	_, err = addAddrToPeerstore(c.Host, maddr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
