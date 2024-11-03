@@ -24,17 +24,28 @@ import (
 	webtransport "github.com/libp2p/go-libp2p/p2p/transport/webtransport"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/webteleport/relay"
+	"github.com/btwiuse/wsport/cmd"
 )
 
 // New creates a new Constella instance.
-func New(relay string) *Constella {
+func New(relayURL string) *Constella {
 	host, _ := libp2p.New(
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Transport(quic.NewTransport),
 		libp2p.Transport(webtransport.New),
 		libp2p.Transport(wsport.New),
-		wsport.ListenAddrStrings(relay),
+		// wsport.ListenAddrStrings(relay),
 	)
+
+	relayMa, err := wsport.FromString(relayURL)
+	if err != nil {
+		panic(err)
+	}
+
+	cmd.Notify(host, relayMa)
+
+	host.Network().Listen(relayMa)
+
 	return &Constella{
 		Host: host,
 	}
@@ -135,12 +146,49 @@ func (c *Constella) Dispatch(r *http.Request) http.Handler {
 	if strings.HasPrefix(r.URL.Path, "/http") {
 		return http.HandlerFunc(c.HandleHTTP)
 	}
+	// the /term/<pid>/... endpoint is used to open a terminal to another peer
+	if strings.HasPrefix(r.URL.Path, "/term") {
+		return http.HandlerFunc(c.HandleTerm)
+	}
 	// the /add/<maddr> endpoint is used to add a new address to the peerstore
 	if strings.HasPrefix(r.URL.Path, "/add") {
 		return http.HandlerFunc(c.HandleAdd)
 	}
 	// otherwise, return the JSON representation of the peer's info
 	return http.HandlerFunc(c.HandleInfo)
+}
+
+func (c *Constella) HandleTerm(w http.ResponseWriter, r *http.Request) {
+	var pid peer.ID
+	for _, peer := range c.Info().Peers {
+		pfx := "/term/" + peer.String()
+		if strings.HasPrefix(r.URL.Path, pfx) {
+			pid = peer
+			break
+		}
+	}
+	if pid == "" {
+		http.Error(w, "peer not found", http.StatusNotFound)
+		return
+	}
+	pfx := "/term/" + pid.String()
+	dialCtx := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// protocol id: /term/1.0.0
+		return gostream.Dial(ctx, c.Host, pid, protocol.ID("/term/1.0.0"))
+	}
+	var rt http.RoundTripper = &http.Transport{
+		DialContext:     dialCtx,
+		MaxIdleConns:    100,
+		IdleConnTimeout: 90 * time.Second,
+	}
+	rp := relay.ReverseProxy(rt)
+	rp.Rewrite = func(req *httputil.ProxyRequest) {
+		req.SetXForwarded()
+
+		req.Out.URL.Host = r.Host
+		req.Out.URL.Scheme = "http"
+	}
+	http.StripPrefix(pfx, rp).ServeHTTP(w, r)
 }
 
 func (c *Constella) HandleHTTP(w http.ResponseWriter, r *http.Request) {
