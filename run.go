@@ -1,10 +1,15 @@
 package constella
 
 import (
-	"github.com/webteleport/wtf"
+	"log"
+	"net/http"
+
+	"github.com/webteleport/utils"
 )
 
 func Run(args []string) error {
-	host := New(RELAY)
-	return wtf.Serve(RELAY, host)
+	port := utils.EnvPort(":8080")
+	constella := New(RELAY)
+	log.Println("listening on", port)
+	return http.ListenAndServe(port, constella)
 }
