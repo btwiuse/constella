@@ -10,7 +10,7 @@ require (
 	github.com/btwiuse/wsport v0.0.7
 	github.com/btwiuse/wsport/cmd v0.0.7
 	github.com/libp2p/go-libp2p v0.37.0
-	github.com/multiformats/go-multiaddr v0.13.0
+	github.com/multiformats/go-multiaddr v0.14.0
 	github.com/webteleport/relay v0.4.35
 	github.com/webteleport/utils v0.2.16
 )
@@ -24,7 +24,7 @@ require (
 	github.com/btwiuse/rng v0.0.1 // indirect
 	github.com/btwiuse/tags v0.0.2 // indirect
 	github.com/btwiuse/wsconn v0.0.3 // indirect
-	github.com/btwiuse/x-parity-wss v0.0.4 // indirect
+	github.com/btwiuse/x-parity-wss v0.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
