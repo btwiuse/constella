@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/btwiuse/dispatcher"
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -23,8 +24,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	webtransport "github.com/libp2p/go-libp2p/p2p/transport/webtransport"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/webteleport/relay"
-	"github.com/btwiuse/wsport/cmd"
+	"github.com/webteleport/utils"
 )
 
 // New creates a new Constella instance.
@@ -42,7 +42,7 @@ func New(relayURL string) *Constella {
 		panic(err)
 	}
 
-	cmd.Notify(host, relayMa)
+	Notify(host, relayMa)
 
 	host.Network().Listen(relayMa)
 
@@ -137,7 +137,7 @@ func (c *Constella) Conns() map[string]ConnStats {
 }
 
 func (c *Constella) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	relay.DispatcherFunc(c.Dispatch).ServeHTTP(w, r)
+	dispatcher.DispatcherFunc(c.Dispatch).ServeHTTP(w, r)
 }
 
 func (c *Constella) Dispatch(r *http.Request) http.Handler {
@@ -181,7 +181,7 @@ func (c *Constella) HandleTerm(w http.ResponseWriter, r *http.Request) {
 		MaxIdleConns:    100,
 		IdleConnTimeout: 90 * time.Second,
 	}
-	rp := relay.ReverseProxy(rt)
+	rp := utils.LoggedReverseProxy(rt)
 	rp.Rewrite = func(req *httputil.ProxyRequest) {
 		req.SetXForwarded()
 
@@ -214,7 +214,7 @@ func (c *Constella) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 		MaxIdleConns:    100,
 		IdleConnTimeout: 90 * time.Second,
 	}
-	rp := relay.ReverseProxy(rt)
+	rp := utils.LoggedReverseProxy(rt)
 	rp.Rewrite = func(req *httputil.ProxyRequest) {
 		req.SetXForwarded()
 
