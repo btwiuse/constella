@@ -13,11 +13,13 @@ import (
 	"github.com/btwiuse/dispatcher"
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
+	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/libp2p/go-libp2p/core/routing"
 	p2phttp "github.com/libp2p/go-libp2p/p2p/http"
 	"github.com/libp2p/go-libp2p/p2p/net/gostream"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
@@ -35,6 +37,13 @@ func New(relayURL string) *Constella {
 		libp2p.Transport(webtransport.New),
 		libp2p.Transport(wsport.New),
 		// wsport.ListenAddrStrings(relay),
+		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
+			return dht.New(
+				context.Background(),
+				h,
+				dht.Mode(dht.ModeAutoServer),
+			)
+		}),
 	)
 
 	relayMa, err := wsport.FromString(relayURL)
