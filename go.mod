@@ -6,7 +6,7 @@ go 1.25.7
 
 require (
 	github.com/btwiuse/dispatcher v0.0.0
-	github.com/btwiuse/wsport v0.0.13
+	github.com/btwiuse/wsport v0.1.0
 	github.com/libp2p/go-libp2p v0.48.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/webteleport/utils v0.2.19
@@ -19,13 +19,14 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btwiuse/version v0.0.2 // indirect
 	github.com/btwiuse/wsconn v0.0.6 // indirect
-	github.com/btwiuse/wsdial v0.1.0 // indirect
+	github.com/btwiuse/wsdial v0.1.2 // indirect
 	github.com/btwiuse/x-parity-wss v0.0.6 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
+	github.com/ebi-yade/altsvc-go v0.1.2-0.20220921153119-0c9cfefbad86 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -91,6 +92,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/webteleport/webteleport v0.5.43-alpha.6 // indirect
+	github.com/webtransport/webtransport v0.0.1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	go.uber.org/dig v1.19.0 // indirect
 	go.uber.org/fx v1.24.0 // indirect
