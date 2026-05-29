@@ -1,40 +1,27 @@
 package constella
 
 import (
-	"context"
-	"log"
-	"net/http"
+	"cmp"
+	"fmt"
+	"os"
 
-	ma "github.com/multiformats/go-multiaddr"
-	"github.com/webteleport/utils"
+	"github.com/webteleport/wtf"
 )
 
-func ConnectBootnodes(c *Constella, addrs []string) {
-	for _, addr := range addrs {
-		maddr, err := ma.NewMultiaddr(addr)
-		if err != nil {
-			log.Println("invalid bootnode addr:", addr, err)
-			continue
-		}
-		peerInfo, err := AddrInfo(maddr)
-		if err != nil {
-			log.Println("failed to resolve bootnode:", addr, err)
-			continue
-		}
-		err = c.Host.Connect(context.Background(), *peerInfo)
-		if err != nil {
-			log.Println("failed to connect bootnode:", addr, err)
-			continue
-		}
-	}
-}
+var (
+	RELAY   = cmp.Or(os.Getenv("RELAY"), "https://example.com")
+	SUBPATH = cmp.Or(os.Getenv("SUBPATH"), "/constella")
+)
 
 func Run(args []string) error {
-	port := utils.EnvPort(":8080")
-	c := New(RELAY)
-	log.Println("listening on", port)
+	c, err := New(RELAY)
+	if err != nil {
+		return fmt.Errorf("New: %w", err)
+	}
 
-	go ConnectBootnodes(c, args)
+	go KeepBootnodes(c, args)
 
-	return http.ListenAndServe(port, c)
+	relay := fmt.Sprintf("%s%s?persist=1", RELAY, SUBPATH)
+
+	return wtf.Serve(relay, c)
 }
