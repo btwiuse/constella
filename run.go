@@ -4,14 +4,16 @@ import (
 	"cmp"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/webteleport/wtf"
 )
 
 var (
-	HTTP_RELAY = cmp.Or(os.Getenv("HTTP_RELAY"), "https://example.com")
+	RELAY      = cmp.Or(os.Getenv("RELAY"), "https://example.com")
+	HTTP_RELAY = cmp.Or(os.Getenv("HTTP_RELAY"), RELAY)
 	HTTP_PATH  = cmp.Or(os.Getenv("HTTP_PATH"), "/")
-	P2P_RELAY  = cmp.Or(os.Getenv("P2P_RELAY"), "https://example.com")
+	P2P_RELAY  = cmp.Or(os.Getenv("P2P_RELAY"), RELAY)
 	P2P_PATH   = cmp.Or(os.Getenv("P2P_PATH"), "/")
 )
 
@@ -25,7 +27,10 @@ func Run(args []string) error {
 
 	go KeepBootnodes(c, args)
 
-	httpRelay := fmt.Sprintf("%s%s?persist=1", HTTP_RELAY, HTTP_PATH)
+	httpRelay := HTTP_RELAY
+	if !strings.HasPrefix(httpRelay, ":") {
+		httpRelay = fmt.Sprintf("%s%s?persist=1", httpRelay, HTTP_PATH)
+	}
 
 	return wtf.Serve(httpRelay, c)
 }
