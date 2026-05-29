@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"expvar"
 	"log"
 	"net"
 	"net/http"
@@ -170,6 +171,10 @@ func (c *Constella) Dispatch(r *http.Request) http.Handler {
 	// the /add/<maddr> endpoint is used to add a new address to the peerstore
 	if strings.HasPrefix(r.URL.Path, "/add") {
 		return http.HandlerFunc(c.HandleAdd)
+	}
+	// the /debug/vars endpoint is used to expose expvar debug values
+	if strings.HasPrefix(r.URL.Path, "/debug/vars") {
+		return expvar.Handler()
 	}
 	// otherwise, return the JSON representation of the peer's info
 	return http.HandlerFunc(c.HandleInfo)
