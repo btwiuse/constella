@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"expvar"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -33,15 +34,16 @@ import (
 )
 
 // New creates a new Constella instance.
-func New(relayURL string) *Constella {
-	host, _ := libp2p.New(
+func New(relayURL string) (*Constella, error) {
+	var rout routing.PeerRouting
+	host, err := libp2p.New(
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Transport(quic.NewTransport),
 		libp2p.Transport(webtransport.New),
 		libp2p.Transport(wsport.New),
 		// wsport.ListenAddrStrings(relay),
-		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
-			return dht.New(
+		libp2p.Routing(func(h host.Host) (r routing.PeerRouting, err error) {
+			r, err = dht.New(
 				context.Background(),
 				h,
 				dht.Mode(dht.ModeAutoServer),
@@ -52,26 +54,35 @@ func New(relayURL string) *Constella {
 					),
 				),
 			)
+			rout = r
+			return
 		}),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("libp2p.New: %w", err)
+	}
 
 	relayMa, err := wsport.FromString(relayURL)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("wsport.FromString: %w", err)
 	}
 
 	Notify(host, relayMa)
 
-	host.Network().Listen(relayMa)
+	if err := host.Network().Listen(relayMa); err != nil {
+		return nil, fmt.Errorf("Listen: %w", err)
+	}
 
 	return &Constella{
 		Host: host,
-	}
+		Rout: rout,
+	}, nil
 }
 
 // Constella is both a http.Handler and a libp2p.Host.
 type Constella struct {
 	host.Host
+	Rout routing.PeerRouting
 }
 
 type Info struct {
@@ -270,4 +281,42 @@ func (c *Constella) HandleInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func KeepBootnodes(host host.Host, addrs []string) {
+	for {
+		err := ConnectBootnodes(host, addrs)
+		if err != nil {
+			log.Println("KeepBootnodes", err)
+		}
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func ConnectBootnodes(host host.Host, addrs []string) error {
+	for _, peerAddr := range addrs {
+		peerMa, err := ma.NewMultiaddr(peerAddr)
+		if err != nil {
+			return err
+		}
+
+		_, peerID := peer.SplitAddr(peerMa)
+
+		if host.Network().Connectedness(peerID) == network.Connected {
+			continue
+		}
+
+		log.Println("Connecting to bootstrap", peerAddr)
+
+		peerInfo, err := peer.AddrInfoFromP2pAddr(peerMa)
+		if err != nil {
+			return err
+		}
+
+		err = host.Connect(context.Background(), *peerInfo)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
