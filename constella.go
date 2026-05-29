@@ -1,12 +1,14 @@
 package constella
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
 	"time"
 
@@ -42,6 +44,12 @@ func New(relayURL string) *Constella {
 				context.Background(),
 				h,
 				dht.Mode(dht.ModeAutoServer),
+				dht.V1ProtocolOverride(
+					cmp.Or(
+						protocol.ID(os.Getenv("DHT")),
+						dht.ProtocolDHT,
+					),
+				),
 			)
 		}),
 	)
