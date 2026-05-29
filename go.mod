@@ -8,7 +8,7 @@ replace github.com/libp2p/go-libp2p => github.com/btwiuse/go-libp2p v0.33.3
 
 require (
 	github.com/btwiuse/dispatcher v0.0.0
-	github.com/btwiuse/wsport v0.1.0
+	github.com/btwiuse/wsport v0.1.1
 	github.com/libp2p/go-libp2p v0.48.0
 	github.com/libp2p/go-libp2p-kad-dht v0.40.0
 	github.com/multiformats/go-multiaddr v0.16.1
@@ -21,7 +21,7 @@ require (
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btwiuse/version v0.0.2 // indirect
-	github.com/btwiuse/wsconn v0.0.6 // indirect
+	github.com/btwiuse/wsconn v0.0.8 // indirect
 	github.com/btwiuse/wsdial v0.1.2 // indirect
 	github.com/btwiuse/x-parity-wss v0.0.6 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
