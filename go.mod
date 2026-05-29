@@ -8,6 +8,7 @@ replace github.com/libp2p/go-libp2p => github.com/btwiuse/go-libp2p v0.33.3
 
 require (
 	github.com/btwiuse/dispatcher v0.0.0
+	github.com/btwiuse/p2pid v0.0.1
 	github.com/btwiuse/wsport v0.1.1
 	github.com/libp2p/go-libp2p v0.48.0
 	github.com/libp2p/go-libp2p-kad-dht v0.40.0

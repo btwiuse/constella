@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/btwiuse/dispatcher"
+	"github.com/btwiuse/p2pid"
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -37,6 +38,7 @@ import (
 func New(relayURL string) (*Constella, error) {
 	var rout routing.PeerRouting
 	host, err := libp2p.New(
+		p2pid.FromEnv(p2pid.PID_SEED),
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Transport(quic.NewTransport),
 		libp2p.Transport(webtransport.New),
