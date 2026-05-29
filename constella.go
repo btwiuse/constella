@@ -36,7 +36,7 @@ import (
 
 // New creates a new Constella instance.
 func New(relayURL string) (*Constella, error) {
-	var rout routing.PeerRouting
+	var rout *dht.IpfsDHT
 	host, err := libp2p.New(
 		p2pid.FromEnv(p2pid.PID_SEED),
 		libp2p.Transport(tcp.NewTCPTransport),
@@ -44,8 +44,8 @@ func New(relayURL string) (*Constella, error) {
 		libp2p.Transport(webtransport.New),
 		libp2p.Transport(wsport.New),
 		// wsport.ListenAddrStrings(relay),
-		libp2p.Routing(func(h host.Host) (r routing.PeerRouting, err error) {
-			r, err = dht.New(
+		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
+			d, err := dht.New(
 				context.Background(),
 				h,
 				dht.Mode(dht.ModeAutoServer),
@@ -56,8 +56,8 @@ func New(relayURL string) (*Constella, error) {
 					),
 				),
 			)
-			rout = r
-			return
+			rout = d
+			return d, err
 		}),
 	)
 	if err != nil {
@@ -84,7 +84,7 @@ func New(relayURL string) (*Constella, error) {
 // Constella is both a http.Handler and a libp2p.Host.
 type Constella struct {
 	host.Host
-	Rout routing.PeerRouting
+	Rout *dht.IpfsDHT
 }
 
 type Info struct {
@@ -95,6 +95,21 @@ type Info struct {
 	Connectedness map[string]string    `json:"connectedness"`
 	AddrInfos     []peer.AddrInfo      `json:"addrInfos"`
 	Protocols     []protocol.ID        `json:"protocols"`
+	Routing       *RoutingInfo         `json:"routing,omitempty"`
+}
+
+type RoutingInfo struct {
+	Mode       string            `json:"mode"`
+	BucketSize int               `json:"bucketSize"`
+	TableSize  int               `json:"tableSize"`
+	Peers      []RoutingPeerInfo `json:"peers"`
+}
+
+type RoutingPeerInfo struct {
+	ID                            peer.ID   `json:"id"`
+	LastUsefulAt                  time.Time `json:"lastUsefulAt"`
+	LastSuccessfulOutboundQueryAt time.Time `json:"lastSuccessfulOutboundQueryAt"`
+	AddedAt                       time.Time `json:"addedAt"`
 }
 
 type ConnStats struct {
@@ -119,7 +134,7 @@ type StreamStats struct {
 }
 
 func (c *Constella) Info() Info {
-	return Info{
+	info := Info{
 		ID:            c.Host.ID(),
 		Addrs:         c.Host.Addrs(),
 		Peers:         c.Host.Peerstore().Peers(),
@@ -127,6 +142,41 @@ func (c *Constella) Info() Info {
 		Connectedness: c.Connectedness(),
 		AddrInfos:     peerstore.AddrInfos(c.Host.Peerstore(), c.Host.Peerstore().Peers()),
 		Protocols:     c.Host.Mux().Protocols(),
+	}
+
+	if c.Rout != nil {
+		peers := make([]RoutingPeerInfo, 0)
+		for _, pi := range c.Rout.RoutingTable().GetPeerInfos() {
+			peers = append(peers, RoutingPeerInfo{
+				ID:                            pi.Id,
+				LastUsefulAt:                  pi.LastUsefulAt,
+				LastSuccessfulOutboundQueryAt: pi.LastSuccessfulOutboundQueryAt,
+				AddedAt:                       pi.AddedAt,
+			})
+		}
+		info.Routing = &RoutingInfo{
+			Mode:       modeString(c.Rout.Mode()),
+			BucketSize: c.Rout.BucketSize(),
+			TableSize:  c.Rout.RoutingTable().Size(),
+			Peers:      peers,
+		}
+	}
+
+	return info
+}
+
+func modeString(m dht.ModeOpt) string {
+	switch m {
+	case dht.ModeAuto:
+		return "auto"
+	case dht.ModeClient:
+		return "client"
+	case dht.ModeServer:
+		return "server"
+	case dht.ModeAutoServer:
+		return "auto-server"
+	default:
+		return "unknown"
 	}
 }
 
@@ -310,7 +360,7 @@ func ConnectBootnodes(host host.Host, addrs []string) error {
 
 		log.Println("Connecting to bootstrap", peerAddr)
 
-		peerInfo, err := peer.AddrInfoFromP2pAddr(peerMa)
+		peerInfo, err := AddrInfo(peerMa)
 		if err != nil {
 			return err
 		}
