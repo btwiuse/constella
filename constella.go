@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"expvar"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -208,7 +208,7 @@ func (c *Constella) Conns() map[string]ConnStats {
 		}
 		protocols, err := c.Host.Peerstore().GetProtocols(connStats.RemotePeer)
 		if err != nil {
-			log.Println(err)
+			slog.Warn("get protocols", "error", err)
 		} else {
 			connStats.Protocols = protocols
 		}
@@ -321,7 +321,7 @@ func (c *Constella) HandleAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("added", maddr)
+	slog.Info("added", "addr", maddr)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -339,7 +339,7 @@ func KeepBootnodes(host host.Host, addrs []string) {
 	for {
 		err := ConnectBootnodes(host, addrs)
 		if err != nil {
-			log.Println("KeepBootnodes", err)
+			slog.Warn("KeepBootnodes", "error", err)
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -352,18 +352,16 @@ func ConnectBootnodes(host host.Host, addrs []string) error {
 			return err
 		}
 
-		_, peerID := peer.SplitAddr(peerMa)
-
-		if host.Network().Connectedness(peerID) == network.Connected {
-			continue
-		}
-
-		log.Println("Connecting to bootstrap", peerAddr)
-
 		peerInfo, err := AddrInfo(peerMa)
 		if err != nil {
 			return err
 		}
+
+		if host.Network().Connectedness(peerInfo.ID) == network.Connected {
+			continue
+		}
+
+		slog.Info("Connecting to bootstrap", "peer", peerInfo.ID)
 
 		err = host.Connect(context.Background(), *peerInfo)
 		if err != nil {

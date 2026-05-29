@@ -2,7 +2,6 @@ package constella
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"sync"
 	"time"
@@ -21,7 +20,7 @@ func Notify(host host.Host, relayMa ma.Multiaddr) {
 				// "localAddrs", host.Addrs(),
 			)
 			for i, addr := range host.Addrs() {
-				log.Println("localAddr", i, addr)
+				slog.Info("localAddr", "i", i, "addr", addr)
 			}
 		},
 		ListenCloseF: func(n network.Network, a ma.Multiaddr) {
@@ -31,14 +30,14 @@ func Notify(host host.Host, relayMa ma.Multiaddr) {
 				// "localAddrs", host.Addrs(),
 			)
 			for i, addr := range host.Addrs() {
-				log.Println("localAddr", i, addr)
+				slog.Info("localAddr", "i", i, "addr", addr)
 			}
 			for i := 0; ; i++ {
 				err := n.Listen(relayMa)
 				if err == nil {
 					break
 				}
-				log.Println(err, "retry in", i, "seconds")
+				slog.Warn("retry listen", "error", err, "delay", i)
 				time.Sleep(time.Duration(i) * time.Second)
 			}
 		},
@@ -55,11 +54,7 @@ func Notify(host host.Host, relayMa ma.Multiaddr) {
 				"connRemoteMa", c.RemoteMultiaddr(),
 			)
 			UpdateUniquePeers(host)
-			log.Println("peer count", len(host.Peerstore().Peers()), "unique", CountUniquePeers())
-			return
-			for i, addr := range host.Peerstore().Peers() {
-				log.Println("peer", i, addr, n.Connectedness(addr).String())
-			}
+			slog.Info("peer count", "total", len(host.Peerstore().Peers()), "unique", CountUniquePeers())
 		},
 		DisconnectedF: func(n network.Network, c network.Conn) {
 			slog.Info(
@@ -75,11 +70,7 @@ func Notify(host host.Host, relayMa ma.Multiaddr) {
 				// "connRemoteMa", c.RemoteMultiaddr(),
 			)
 			UpdateUniquePeers(host)
-			log.Println("peer count", len(host.Peerstore().Peers()), "unique", CountUniquePeers())
-			return
-			for i, addr := range host.Peerstore().Peers() {
-				log.Println("peer", i, addr, n.Connectedness(addr).String())
-			}
+			slog.Info("peer count", "total", len(host.Peerstore().Peers()), "unique", CountUniquePeers())
 		},
 	}
 
@@ -93,7 +84,7 @@ func UpdateUniquePeers(host host.Host) {
 		// key: peer.ID, value: struct{}
 		_, loaded := UniquePeers.LoadOrStore(peer, struct{}{})
 		if !loaded {
-			log.Println("new peer", peer)
+			slog.Info("new peer", "peer", peer)
 		}
 	}
 }
