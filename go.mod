@@ -39,6 +39,7 @@ require (
 	github.com/flynn/noise v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
@@ -62,6 +63,7 @@ require (
 	github.com/libp2p/go-flow-metrics v0.3.0 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.4.1 // indirect
 	github.com/libp2p/go-libp2p-kbucket v0.8.0 // indirect
+	github.com/libp2p/go-libp2p-pubsub v0.16.0 // indirect
 	github.com/libp2p/go-libp2p-record v0.3.1 // indirect
 	github.com/libp2p/go-libp2p-routing-helpers v0.7.5 // indirect
 	github.com/libp2p/go-msgio v0.3.0 // indirect

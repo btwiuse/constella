@@ -19,6 +19,7 @@ import (
 	"github.com/btwiuse/wsport"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -75,16 +76,34 @@ func New(relayURL string) (*Constella, error) {
 		return nil, fmt.Errorf("Listen: %w", err)
 	}
 
+	ps, err := pubsub.NewGossipSub(context.Background(), host)
+	if err != nil {
+		return nil, fmt.Errorf("pubsub.NewGossipSub: %w", err)
+	}
+
+	counter, err := NewCounter(host.ID(), ps)
+	if err != nil {
+		return nil, fmt.Errorf("NewCounter: %w", err)
+	}
+
+	host.Network().Notify(&network.NotifyBundle{
+		ConnectedF: func(_ network.Network, _ network.Conn) {
+			counter.Broadcast()
+		},
+	})
+
 	return &Constella{
-		Host: host,
-		Rout: rout,
+		Host:    host,
+		Rout:    rout,
+		Counter: counter,
 	}, nil
 }
 
 // Constella is both a http.Handler and a libp2p.Host.
 type Constella struct {
 	host.Host
-	Rout *dht.IpfsDHT
+	Rout    *dht.IpfsDHT
+	Counter *Counter
 }
 
 type Info struct {
@@ -235,12 +254,41 @@ func (c *Constella) Dispatch(r *http.Request) http.Handler {
 	if strings.HasPrefix(r.URL.Path, "/add") {
 		return http.HandlerFunc(c.HandleAdd)
 	}
+	// the /counter/add endpoint increments the local CRDT counter
+	if r.URL.Path == "/counter/add" {
+		return http.HandlerFunc(c.HandleCounterAdd)
+	}
+	// the /counter endpoint returns the current counter value
+	if r.URL.Path == "/counter" {
+		return http.HandlerFunc(c.HandleCounter)
+	}
 	// the /debug/vars endpoint is used to expose expvar debug values
 	if strings.HasPrefix(r.URL.Path, "/debug/vars") {
 		return expvar.Handler()
 	}
 	// otherwise, return the JSON representation of the peer's info
 	return http.HandlerFunc(c.HandleInfo)
+}
+
+func (c *Constella) HandleCounter(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	data, _ := json.MarshalIndent(map[string]any{
+		"self":   c.Host.ID().String(),
+		"counts": c.Counter.Snapshot(),
+		"total":  c.Counter.Value(),
+	}, "", "  ")
+	w.Write(data)
+}
+
+func (c *Constella) HandleCounterAdd(w http.ResponseWriter, r *http.Request) {
+	c.Counter.Increment()
+	w.Header().Set("Content-Type", "application/json")
+	data, _ := json.MarshalIndent(map[string]any{
+		"self":   c.Host.ID().String(),
+		"counts": c.Counter.Snapshot(),
+		"total":  c.Counter.Value(),
+	}, "", "  ")
+	w.Write(data)
 }
 
 func (c *Constella) HandleTerm(w http.ResponseWriter, r *http.Request) {
