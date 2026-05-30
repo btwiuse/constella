@@ -25,6 +25,8 @@ func Run(args []string) error {
 		return fmt.Errorf("New: %w", err)
 	}
 
+	maybeRegisterJS(c)
+
 	go KeepBootnodes(c, args)
 
 	httpRelay := HTTP_RELAY

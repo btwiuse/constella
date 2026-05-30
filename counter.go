@@ -16,12 +16,13 @@ const (
 )
 
 type Counter struct {
-	mu     sync.RWMutex         `json:"-"`
-	Counts map[string]int64     `json:"counts"`
-	SelfID string               `json:"self"`
-	Sum    int64                `json:"sum,omitempty"`
-	topic  *pubsub.Topic        `json:"-"`
-	subs   *pubsub.Subscription `json:"-"`
+	mu       sync.RWMutex         `json:"-"`
+	Counts   map[string]int64     `json:"counts"`
+	SelfID   string               `json:"self"`
+	Sum      int64                `json:"sum,omitempty"`
+	topic    *pubsub.Topic        `json:"-"`
+	subs     *pubsub.Subscription `json:"-"`
+	OnUpdate func()               `json:"-"`
 }
 
 func NewCounter(self peer.ID, ps *pubsub.PubSub) (*Counter, error) {
@@ -81,6 +82,10 @@ func (c *Counter) subscribeLoop() {
 		)
 
 		c.Broadcast()
+
+		if c.OnUpdate != nil {
+			c.OnUpdate()
+		}
 	}
 }
 
@@ -93,6 +98,10 @@ func (c *Counter) Increment() {
 	slog.Info("[counter] increment", "self", c.SelfID, "newCount", val)
 
 	c.Broadcast()
+
+	if c.OnUpdate != nil {
+		c.OnUpdate()
+	}
 }
 
 func (c *Counter) Snapshot() Counter {

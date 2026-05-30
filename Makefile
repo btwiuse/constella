@@ -1,8 +1,11 @@
 build:
-	go build -o /tmp/ ./cmd/constella
+	go mod tidy
+	CGO_ENABLED=0 go build -o /tmp/ ./cmd/constella
 
 build-wasm:
-	GOOS=js GOARCH=wasm go build -o /tmp/constella.wasm ./cmd/constella
+	go mod tidy
+	cp $$(go env GOROOT)/lib/wasm/wasm_exec.js ./www
+	GOOS=js GOARCH=wasm go build -o www/constella.wasm ./cmd/constella
 
 run:
 	# The constella libp2p address could be different from the HTTP listening address
