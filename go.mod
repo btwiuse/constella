@@ -12,9 +12,10 @@ require (
 	github.com/btwiuse/wsport v0.1.2
 	github.com/libp2p/go-libp2p v0.48.0
 	github.com/libp2p/go-libp2p-kad-dht v0.40.0
+	github.com/libp2p/go-libp2p-pubsub v0.16.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/webteleport/utils v0.2.19
-	github.com/webteleport/wtf v0.1.32
+	github.com/webteleport/wtf v0.1.33
 )
 
 require (
@@ -63,7 +64,6 @@ require (
 	github.com/libp2p/go-flow-metrics v0.3.0 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.4.1 // indirect
 	github.com/libp2p/go-libp2p-kbucket v0.8.0 // indirect
-	github.com/libp2p/go-libp2p-pubsub v0.16.0 // indirect
 	github.com/libp2p/go-libp2p-record v0.3.1 // indirect
 	github.com/libp2p/go-libp2p-routing-helpers v0.7.5 // indirect
 	github.com/libp2p/go-msgio v0.3.0 // indirect
@@ -115,7 +115,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/webteleport/auth v0.0.9 // indirect
-	github.com/webteleport/webteleport v0.5.43-alpha.6 // indirect
+	github.com/webteleport/webteleport v0.5.43-alpha.7 // indirect
 	github.com/webtransport/webtransport v0.0.1 // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
