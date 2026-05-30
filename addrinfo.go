@@ -41,8 +41,9 @@ func RandID() peer.ID {
 	return host.ID()
 }
 
-// automatically add /p2p/<peerID> to the multiaddr if it is missing
-// this is a workaround for the issue that AddrInfoFromP2pAddr does not work without /p2p/<peerID>
+// AddrInfo resolves a multiaddr to peer.AddrInfo even when /p2p/<peerID> is missing.
+// It automatically adds /p2p/<peerID> to the multiaddr if it is missing.
+// This is a workaround for the issue that AddrInfoFromP2pAddr does not work without /p2p/<peerID>.
 // https://github.com/libp2p/go-libp2p/issues/1040
 func AddrInfo(addr ma.Multiaddr) (*peer.AddrInfo, error) {
 	if _, err := addr.ValueForProtocol(ma.P_P2P); err == nil {
@@ -57,6 +58,8 @@ func AddrInfo(addr ma.Multiaddr) (*peer.AddrInfo, error) {
 	}
 	defer host.Close()
 
+	// Trick: try connecting to a random Peer ID and extract the actual Peer ID
+	// from the sec.ErrPeerIDMismatch error returned by the remote peer.
 	p2pID := ma.StringCast(fmt.Sprintf("/p2p/%s", RandID()))
 	addr = addr.Encapsulate(p2pID)
 
