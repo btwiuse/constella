@@ -16,11 +16,12 @@ const (
 )
 
 type Counter struct {
-	mu     sync.RWMutex
-	Counts map[peer.ID]int64 `json:"counts"`
-	self   peer.ID
-	topic  *pubsub.Topic
-	subs   *pubsub.Subscription
+	mu     sync.RWMutex         `json:"-"`
+	Counts map[string]int64     `json:"counts"`
+	SelfID string               `json:"self"`
+	Sum    int64                `json:"sum,omitempty"`
+	topic  *pubsub.Topic        `json:"-"`
+	subs   *pubsub.Subscription `json:"-"`
 }
 
 func NewCounter(self peer.ID, ps *pubsub.PubSub) (*Counter, error) {
@@ -35,8 +36,8 @@ func NewCounter(self peer.ID, ps *pubsub.PubSub) (*Counter, error) {
 	}
 
 	c := &Counter{
-		Counts: map[peer.ID]int64{self: 0},
-		self:   self,
+		Counts: map[string]int64{self.String(): 0},
+		SelfID: self.String(),
 		topic:  topic,
 		subs:   subs,
 	}
@@ -57,20 +58,18 @@ func (c *Counter) subscribeLoop() {
 			continue
 		}
 
-		var payload struct {
-			Counts map[string]int64 `json:"counts"`
-		}
-		if err := json.Unmarshal(msg.Data, &payload); err != nil {
+		var msgCounts Counter
+		if err := json.Unmarshal(msg.Data, &msgCounts); err != nil {
 			slog.Warn("[counter] unmarshal error", "error", err)
 			continue
 		}
 
 		// skip our own broadcasts
-		if msg.ReceivedFrom == c.self {
+		if msg.ReceivedFrom.String() == c.SelfID {
 			continue
 		}
 
-		changed := c.merge(payload.Counts)
+		changed := c.merge(msgCounts.Counts)
 
 		if !changed {
 			continue
@@ -78,43 +77,45 @@ func (c *Counter) subscribeLoop() {
 
 		slog.Info("[counter] merged from pubsub",
 			"from", msg.ReceivedFrom,
-			"value", c.Value(),
-			"peerCount", len(payload.Counts),
+			"sum", sumCounts(c.Counts),
 		)
+
+		c.Broadcast()
 	}
 }
 
 func (c *Counter) Increment() {
 	c.mu.Lock()
-	c.Counts[c.self]++
-	val := c.Counts[c.self]
+	c.Counts[c.SelfID]++
+	val := c.Counts[c.SelfID]
 	c.mu.Unlock()
 
-	slog.Info("[counter] increment", "self", c.self, "newCount", val)
+	slog.Info("[counter] increment", "self", c.SelfID, "newCount", val)
 
 	c.Broadcast()
 }
 
-func (c *Counter) Value() int64 {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	var total int64
-	for _, v := range c.Counts {
-		total += v
-	}
-	return total
-}
-
-func (c *Counter) Snapshot() map[string]int64 {
+func (c *Counter) Snapshot() Counter {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	snap := make(map[string]int64, len(c.Counts))
 	for k, v := range c.Counts {
-		snap[k.String()] = v
+		snap[k] = v
 	}
-	return snap
+	return Counter{
+		Counts: snap,
+		SelfID: c.SelfID,
+		Sum:    sumCounts(c.Counts),
+	}
+}
+
+func sumCounts(counts map[string]int64) int64 {
+	var total int64
+	for _, v := range counts {
+		total += v
+	}
+	return total
 }
 
 func (c *Counter) merge(counts map[string]int64) bool {
@@ -122,11 +123,7 @@ func (c *Counter) merge(counts map[string]int64) bool {
 	defer c.mu.Unlock()
 
 	changed := false
-	for pidStr, count := range counts {
-		pid, err := peer.Decode(pidStr)
-		if err != nil {
-			continue
-		}
+	for pid, count := range counts {
 		existing, ok := c.Counts[pid]
 		if !ok || count > existing {
 			c.Counts[pid] = count
@@ -138,13 +135,8 @@ func (c *Counter) merge(counts map[string]int64) bool {
 
 func (c *Counter) Broadcast() {
 	c.mu.RLock()
-	snap := make(map[string]int64, len(c.Counts))
-	for k, v := range c.Counts {
-		snap[k.String()] = v
-	}
-	data, err := json.Marshal(struct {
-		Counts map[string]int64 `json:"counts"`
-	}{Counts: snap})
+	data, err := json.Marshal(c)
+	sum := sumCounts(c.Counts)
 	c.mu.RUnlock()
 
 	if err != nil {
@@ -154,5 +146,5 @@ func (c *Counter) Broadcast() {
 
 	c.topic.Publish(context.Background(), data)
 
-	slog.Info("[counter] broadcast", "value", c.Value(), "peers", len(snap))
+	slog.Info("[counter] broadcast", "sum", sum)
 }

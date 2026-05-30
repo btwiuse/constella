@@ -272,22 +272,14 @@ func (c *Constella) Dispatch(r *http.Request) http.Handler {
 
 func (c *Constella) HandleCounter(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	data, _ := json.MarshalIndent(map[string]any{
-		"self":   c.Host.ID().String(),
-		"counts": c.Counter.Snapshot(),
-		"total":  c.Counter.Value(),
-	}, "", "  ")
+	data, _ := json.MarshalIndent(c.Counter.Snapshot(), "", "  ")
 	w.Write(data)
 }
 
 func (c *Constella) HandleCounterAdd(w http.ResponseWriter, r *http.Request) {
 	c.Counter.Increment()
 	w.Header().Set("Content-Type", "application/json")
-	data, _ := json.MarshalIndent(map[string]any{
-		"self":   c.Host.ID().String(),
-		"counts": c.Counter.Snapshot(),
-		"total":  c.Counter.Value(),
-	}, "", "  ")
+	data, _ := json.MarshalIndent(c.Counter.Snapshot(), "", "  ")
 	w.Write(data)
 }
 
