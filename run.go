@@ -2,25 +2,52 @@ package constella
 
 import (
 	"cmp"
+	"context"
 	"fmt"
+	"log/slog"
+	"net"
 	"os"
 	"strings"
 
-	"github.com/webteleport/wtf"
+	"github.com/btwiuse/wsport"
+	ma "github.com/multiformats/go-multiaddr"
+	"github.com/webteleport/webteleport"
 )
 
 var (
-	RELAY      = cmp.Or(os.Getenv("RELAY"), "https://example.com")
-	HTTP_RELAY = cmp.Or(os.Getenv("HTTP_RELAY"), RELAY)
-	HTTP_PATH  = cmp.Or(os.Getenv("HTTP_PATH"), "/")
-	P2P_RELAY  = cmp.Or(os.Getenv("P2P_RELAY"), RELAY)
-	P2P_PATH   = cmp.Or(os.Getenv("P2P_PATH"), "/")
+	RELAY     = cmp.Or(os.Getenv("RELAY"), "https://example.com")
+	P2P_PATH  = cmp.Or(os.Getenv("P2P_PATH"), "/")
+	P2P_RELAY = cmp.Or(os.Getenv("P2P_RELAY"), RELAY)
 )
 
-func Run(args []string) error {
-	p2pRelay := fmt.Sprintf("%s%s", P2P_RELAY, P2P_PATH)
+func listen() (ln net.Listener, maddr ma.Multiaddr, err error) {
+	var addrStr string
 
-	c, err := New(p2pRelay)
+	if strings.HasPrefix(RELAY, ":") {
+		ln, err = net.Listen("tcp", RELAY)
+		if err != nil {
+			return nil, nil, fmt.Errorf("listen tcp: %w", err)
+		}
+		addrStr = "http://127.0.0.1" + RELAY
+	} else {
+		relayURL := fmt.Sprintf("%s%s", P2P_RELAY, P2P_PATH)
+		ln, err = webteleport.Listen(context.Background(), relayURL)
+		if err != nil {
+			return nil, nil, fmt.Errorf("listen relay: %w", err)
+		}
+		addrStr = fmt.Sprintf("%s://%s", ln.Addr().Network(), ln.Addr())
+	}
+
+	maddr, err = wsport.FromString(addrStr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("wsport.FromString: %w", err)
+	}
+
+	return ln, maddr, nil
+}
+
+func Run(args []string) error {
+	c, err := New()
 	if err != nil {
 		return fmt.Errorf("New: %w", err)
 	}
@@ -29,10 +56,16 @@ func Run(args []string) error {
 
 	go KeepBootnodes(c, args)
 
-	httpRelay := HTTP_RELAY
-	if !strings.HasPrefix(httpRelay, ":") {
-		httpRelay = fmt.Sprintf("%s%s?persist=1", httpRelay, HTTP_PATH)
-	}
+	for {
+		ln, listenMa, err := listen()
+		if err != nil {
+			slog.Error("listen failed, retrying", "error", err)
+			continue
+		}
 
-	return wtf.Serve(httpRelay, c)
+		if err := c.Serve(ln, listenMa); err != nil {
+			slog.Error("serve failed, reconnecting", "error", err)
+			continue
+		}
+	}
 }

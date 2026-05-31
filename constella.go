@@ -12,6 +12,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/btwiuse/dispatcher"
@@ -26,6 +27,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/core/routing"
+	"github.com/libp2p/go-libp2p/core/transport"
 	p2phttp "github.com/libp2p/go-libp2p/p2p/http"
 	"github.com/libp2p/go-libp2p/p2p/net/gostream"
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
@@ -36,15 +38,20 @@ import (
 )
 
 // New creates a new Constella instance.
-func New(relayURL string) (*Constella, error) {
+func New() (*Constella, error) {
+	var tpt *wsport.WebsocketTransport
 	var rout *dht.IpfsDHT
+
 	host, err := libp2p.New(
 		p2pid.FromEnv(p2pid.PID_SEED),
 		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.Transport(quic.NewTransport),
 		libp2p.Transport(webtransport.New),
-		libp2p.Transport(wsport.New),
-		// wsport.ListenAddrStrings(relay),
+		libp2p.Transport(func(u transport.Upgrader, rcmgr network.ResourceManager) (*wsport.WebsocketTransport, error) {
+			var err error
+			tpt, err = wsport.New(u, rcmgr)
+			return tpt, err
+		}),
 		libp2p.Routing(func(h host.Host) (routing.PeerRouting, error) {
 			d, err := dht.New(
 				context.Background(),
@@ -65,16 +72,7 @@ func New(relayURL string) (*Constella, error) {
 		return nil, fmt.Errorf("libp2p.New: %w", err)
 	}
 
-	relayMa, err := wsport.FromString(relayURL)
-	if err != nil {
-		return nil, fmt.Errorf("wsport.FromString: %w", err)
-	}
-
-	Notify(host, relayMa)
-
-	if err := host.Network().Listen(relayMa); err != nil {
-		return nil, fmt.Errorf("Listen: %w", err)
-	}
+	wsh := tpt.WebSocketHandler()
 
 	ps, err := pubsub.NewGossipSub(context.Background(), host)
 	if err != nil {
@@ -96,14 +94,32 @@ func New(relayURL string) (*Constella, error) {
 		Host:    host,
 		Rout:    rout,
 		Counter: counter,
+		Tpt:     tpt,
+		Wsh:     wsh,
 	}, nil
 }
 
 // Constella is both a http.Handler and a libp2p.Host.
 type Constella struct {
 	host.Host
-	Rout    *dht.IpfsDHT
-	Counter *Counter
+	Rout         *dht.IpfsDHT
+	Counter      *Counter
+	Tpt          *wsport.WebsocketTransport
+	Wsh          http.Handler
+	notifiedOnce sync.Once
+}
+
+// Serve binds p2p and HTTP to the given listener and serves until failure.
+func (c *Constella) Serve(ln net.Listener, listenMa ma.Multiaddr) error {
+	c.notifiedOnce.Do(func() {
+		Notify(c.Host)
+	})
+
+	if err := c.Network().Listen(listenMa); err != nil {
+		return fmt.Errorf("Network.Listen: %w", err)
+	}
+
+	return http.Serve(ln, c)
 }
 
 type Info struct {
@@ -241,6 +257,13 @@ func (c *Constella) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Constella) Dispatch(r *http.Request) http.Handler {
+	// root path: p2p WebSocket upgrade or default info handler
+	if r.URL.Path == "/" {
+		if strings.Contains(strings.ToLower(r.Header.Get("Upgrade")), "websocket") {
+			return c.Wsh
+		}
+		return http.HandlerFunc(c.HandleInfo)
+	}
 	// the /http/<pid>/... endpoint is used to proxy HTTP requests to other peers
 	// via the /http/1.1 protocol defined in p2phttp
 	if strings.HasPrefix(r.URL.Path, "/http") {

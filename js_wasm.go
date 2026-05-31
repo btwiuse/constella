@@ -20,11 +20,11 @@ func maybeRegisterJS(c *Constella) {
 			}))
 	}
 
-	addFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+	addFn := js.FuncOf(func(this js.Value, args []js.Value) any {
 		c.Counter.Increment()
 		return nil
 	})
-	getFn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+	getFn := js.FuncOf(func(this js.Value, args []js.Value) any {
 		snap := c.Counter.Snapshot()
 		data, err := json.MarshalIndent(snap, "", "  ")
 		if err != nil {

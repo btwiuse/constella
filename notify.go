@@ -11,7 +11,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-func Notify(host host.Host, relayMa ma.Multiaddr) {
+func Notify(host host.Host) {
 	notifiee := &network.NotifyBundle{
 		ListenF: func(n network.Network, a ma.Multiaddr) {
 			slog.Info(
@@ -31,14 +31,6 @@ func Notify(host host.Host, relayMa ma.Multiaddr) {
 			)
 			for i, addr := range host.Addrs() {
 				slog.Info("localAddr", "i", i, "addr", addr)
-			}
-			for i := 0; ; i++ {
-				err := n.Listen(relayMa)
-				if err == nil {
-					break
-				}
-				slog.Warn("retry listen", "error", err, "delay", i)
-				time.Sleep(time.Duration(i) * time.Second)
 			}
 		},
 		ConnectedF: func(n network.Network, c network.Conn) {
@@ -91,7 +83,7 @@ func UpdateUniquePeers(host host.Host) {
 
 func CountUniquePeers() int {
 	count := 0
-	UniquePeers.Range(func(_, _ interface{}) bool {
+	UniquePeers.Range(func(_, _ any) bool {
 		count++
 		return true
 	})

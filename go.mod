@@ -4,18 +4,20 @@ go 1.25.7
 
 replace github.com/libp2p/go-libp2p => github.com/btwiuse/go-libp2p v0.33.3
 
-// replace github.com/btwiuse/wsport v0.0.9 => ../wsport
+// replace github.com/btwiuse/wsport => ../wsport
+
+// replace github.com/webteleport/webteleport => ../webteleport
 
 require (
 	github.com/btwiuse/dispatcher v0.0.0
 	github.com/btwiuse/p2pid v0.0.1
-	github.com/btwiuse/wsport v0.1.2
+	github.com/btwiuse/wsport v0.1.3
 	github.com/libp2p/go-libp2p v0.48.0
 	github.com/libp2p/go-libp2p-kad-dht v0.40.0
 	github.com/libp2p/go-libp2p-pubsub v0.16.0
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/webteleport/utils v0.2.19
-	github.com/webteleport/wtf v0.1.33
+	github.com/webteleport/webteleport v0.5.43-alpha.7
 )
 
 require (
@@ -23,7 +25,6 @@ require (
 	filippo.io/keygen v0.0.0-20260114151900-8e2790ea4c5b // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/btwiuse/rng v0.0.1 // indirect
 	github.com/btwiuse/version v0.0.2 // indirect
 	github.com/btwiuse/wsconn v0.0.8 // indirect
 	github.com/btwiuse/wsdial v0.1.2 // indirect
@@ -32,7 +33,6 @@ require (
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
-	github.com/docker/docker v27.3.1+incompatible // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/ebi-yade/altsvc-go v0.1.2-0.20220921153119-0c9cfefbad86 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -56,7 +56,6 @@ require (
 	github.com/ipld/go-ipld-prime v0.23.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
-	github.com/kataras/basicauth v0.0.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/koron/go-ssdp v0.0.6 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
@@ -114,8 +113,6 @@ require (
 	github.com/quic-go/webtransport-go v0.10.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/webteleport/auth v0.0.9 // indirect
-	github.com/webteleport/webteleport v0.5.43-alpha.7 // indirect
 	github.com/webtransport/webtransport v0.0.1 // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
@@ -141,7 +138,6 @@ require (
 	golang.org/x/tools v0.44.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.32.3 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )

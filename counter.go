@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"maps"
 	"sync"
 	"time"
 
@@ -104,15 +105,13 @@ func (c *Counter) Increment() {
 	}
 }
 
-func (c *Counter) Snapshot() Counter {
+func (c *Counter) Snapshot() *Counter {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	snap := make(map[string]int64, len(c.Counts))
-	for k, v := range c.Counts {
-		snap[k] = v
-	}
-	return Counter{
+	maps.Copy(snap, c.Counts)
+	return &Counter{
 		Counts: snap,
 		SelfID: c.SelfID,
 		Sum:    sumCounts(c.Counts),
