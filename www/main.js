@@ -20,7 +20,7 @@ function extractGoEnv(search = window.location.search) {
 
 const params = new URLSearchParams(location.search);
 const bootnode = params.get("bootnode") ||
-  "/dns/4f5r647iqaukagrrdyeui3nqotnje2edscisgevadeir2ttzlw2tozyd.pub.webtransport.fun/tcp/443/wss";
+  "/dns/constella-production.up.railway.app/tcp/443/wss";
 
 const go = new Go();
 go.env = {
