@@ -7,6 +7,8 @@ import (
 	"syscall/js"
 )
 
+var global = js.Global()
+
 func maybeRegisterJS(c *Constella) {
 	c.Counter.OnUpdate = func() {
 		snap := c.Counter.Snapshot()
@@ -14,10 +16,10 @@ func maybeRegisterJS(c *Constella) {
 		if err != nil {
 			return
 		}
-		js.Global().Get("window").Call("dispatchEvent",
-			js.Global().Get("CustomEvent").New("counter_update", map[string]any{
-				"detail": string(data),
-			}))
+		event := global.Get("CustomEvent").New("counter_update", map[string]any{
+			"detail": string(data),
+		})
+		global.Call("dispatchEvent", event)
 	}
 
 	addFn := js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -33,15 +35,15 @@ func maybeRegisterJS(c *Constella) {
 		return string(data)
 	})
 
-	counterObj := js.Global().Get("Object").New()
+	counterObj := global.Get("Object").New()
 	counterObj.Set("add", addFn)
 	counterObj.Set("get", getFn)
-	js.Global().Set("counter", counterObj)
+	global.Set("counter", counterObj)
 
 	// Prevent GC of the js.Func wrappers
-	js.Global().Get("window").Set("__counter_add", addFn)
-	js.Global().Get("window").Set("__counter_get", getFn)
+	global.Set("__counter_add", addFn)
+	global.Set("__counter_get", getFn)
 
-	js.Global().Get("window").Call("dispatchEvent",
-		js.Global().Get("CustomEvent").New("counter_ready"))
+	event := global.Get("CustomEvent").New("counter_ready")
+	global.Call("dispatchEvent", event)
 }
